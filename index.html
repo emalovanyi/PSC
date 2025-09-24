@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Možnosti doručenia</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            height: 100vh;
+        }
+
+        .delivery-container {
+            width: 100%;
+            max-width: 600px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .delivery-header {
+            background-color: #79bb42;
+            padding: 15px 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .delivery-content {
+            background-color: white;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+            padding: 0 20px;
+        }
+
+        .delivery-container:hover .delivery-content {
+            max-height: 500px;
+            padding: 20px;
+        }
+
+        .postal-code-box {
+            margin-bottom: 20px;
+        }
+
+        .location-display {
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+        }
+        
+        .location-text {
+            flex-grow: 1;
+        }
+
+        .edit-icon {
+            cursor: pointer;
+            color: #666;
+            margin-left: 10px;
+            transition: color 0.3s ease;
+        }
+        
+        .edit-icon:hover {
+            color: #333;
+        }
+        
+        #postalCode {
+            width: 95%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .hidden-input {
+            display: none;
+        }
+        
+        .active-input {
+            display: block;
+        }
+        
+        h2 {
+            margin: 20px 0;
+            font-size: 24px;
+            font-weight: normal;
+            color: #333;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        li:last-child {
+            border-bottom: none;
+        }
+
+        .details {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .delivery-date {
+            color: #79bb42;
+            font-weight: bold;
+        }
+
+        .stock-info {
+            font-size: 14px;
+            color: #79bb42;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="delivery-container">
+        <div class="delivery-header">
+            <span id="deliveryHeaderDate"></span>
+        </div>
+        
+        <div class="delivery-content">
+            <div class="postal-code-box">
+                <div id="locationDisplay" class="location-display">
+                    <span id="locationText" class="location-text"></span>
+                    <i class="fas fa-pen edit-icon" id="editIcon"></i>
+                </div>
+                
+                <input type="text" id="postalCode" class="hidden-input" placeholder="Zadajte vaše PSČ (napr. 04001)">
+            </div>
+            
+            <h2>Možnosti doručenia</h2>
+            <ul>
+                <li id="storePickup">
+                    Na predajni<span id="storeStock" class="stock-info"></span>
+                    <br><span class="details" id="storeAddress"></span>
+                </li>
+                <li id="gymbeamBox">GymBeam Box - Rastislavova 93, Košice <span id="gymbeamDate" class="delivery-date"></span></li>
+                <li>Doručenie na výdajňu Packeta <span id="packetaDate" class="delivery-date"></span></li>
+                <li>Doručenie na Vašu poštu <span id="postDate" class="delivery-date"></span></li>
+                <li>Doručenie kuriérom SPS <span id="spsDate" class="delivery-date"></span></li>
+                <li>Doručenie kuriérom Slovenskej pošty <span id="slovakPostDate" class="delivery-date"></span></li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const deliveryMap = {
+                '04001': {
+                    display: '040 01, Rastislavova 93, Košice',
+                    showGymbeamBox: true,
+                    store: {
+                        address: '(Rastislavova 93, Košice)',
+                        stock: '>5 kusov'
+                    },
+                    dates: {
+                        gymbeam: 'streda 24. 9.',
+                        packeta: 'štvrtok 25. 9.',
+                        post: 'piatok 26. 9.',
+                        sps: 'štvrtok 25. 9.',
+                        slovakPost: 'piatok 26. 9.'
+                    }
+                },
+                '81101': {
+                    display: '811 01, Bratislava',
+                    showGymbeamBox: false,
+                    store: null,
+                    dates: {
+                        packeta: 'piatok 26. 9.',
+                        post: 'sobota 27. 9.',
+                        sps: 'piatok 26. 9.',
+                        slovakPost: 'sobota 27. 9.'
+                    }
+                },
+                '11000': {
+                    display: '110 00, Rohanské nábř. 678/23, Praha',
+                    showGymbeamBox: false,
+                    store: {
+                        address: '(Rohanské nábř. 678/23, 186 00 Rohanský ostrov, Czechia)',
+                        stock: '>5 kusov'
+                    },
+                    dates: {
+                        packeta: 'pondelok 29. 9.',
+                        post: 'utorok 30. 9.',
+                        sps: 'pondelok 29. 9.',
+                        slovakPost: 'utorok 30. 9.'
+                    }
+                },
+                'default': {
+                    display: '040 01, Rastislavova 93, Košice',
+                    showGymbeamBox: true,
+                    store: {
+                        address: '(Rastislavova 93, Košice)',
+                        stock: '>5 kusov'
+                    },
+                    dates: {
+                        gymbeam: 'streda 24. 9.',
+                        packeta: 'štvrtok 25. 9.',
+                        post: 'piatok 26. 9.',
+                        sps: 'štvrtok 25. 9.',
+                        slovakPost: 'piatok 26. 9.'
+                    }
+                }
+            };
+            
+            const datePriority = {
+                'streda 24. 9.': 1,
+                'štvrtok 25. 9.': 2,
+                'piatok 26. 9.': 3,
+                'sobota 27. 9.': 4,
+                'pondelok 29. 9.': 5,
+                'utorok 30. 9.': 6
+            };
+
+            const postalCodeInput = document.getElementById('postalCode');
+            const deliveryHeaderDate = document.getElementById('deliveryHeaderDate');
+            const locationDisplay = document.getElementById('locationDisplay');
+            const locationText = document.getElementById('locationText');
+            const editIcon = document.getElementById('editIcon');
+            const storePickup = document.getElementById('storePickup');
+            const storeAddress = document.getElementById('storeAddress');
+            const storeStock = document.getElementById('storeStock');
+            const gymbeamBox = document.getElementById('gymbeamBox');
+            const gymbeamDate = document.getElementById('gymbeamDate');
+            const packetaDate = document.getElementById('packetaDate');
+            const postDate = document.getElementById('postDate');
+            const spsDate = document.getElementById('spsDate');
+            const slovakPostDate = document.getElementById('slovakPostDate');
+
+            function getFastestDeliveryDate(dates) {
+                const deliveryDates = Object.values(dates);
+                const fastestPriority = Math.min(...deliveryDates.map(date => datePriority[date]));
+                return Object.keys(datePriority).find(key => datePriority[key] === fastestPriority);
+            }
+
+            function updateDisplay(data) {
+                const fastestDate = getFastestDeliveryDate(data.dates);
+                deliveryHeaderDate.textContent = `Môžete mať ${fastestDate}`;
+
+                // Podmienkové zobrazenie GymBeam Boxu
+                if (data.showGymbeamBox) {
+                    gymbeamBox.style.display = 'list-item';
+                    gymbeamDate.textContent = data.dates.gymbeam;
+                } else {
+                    gymbeamBox.style.display = 'none';
+                }
+
+                packetaDate.textContent = data.dates.packeta;
+                postDate.textContent = data.dates.post;
+                spsDate.textContent = data.dates.sps;
+                slovakPostDate.textContent = data.dates.slovakPost;
+
+                if (data.store) {
+                    storePickup.style.display = 'list-item';
+                    storeAddress.textContent = data.store.address;
+                    storeStock.textContent = data.store.stock ? `(${data.store.stock})` : '';
+                } else {
+                    storePickup.style.display = 'none';
+                }
+            }
+
+            function showEditMode() {
+                locationDisplay.style.display = 'none';
+                postalCodeInput.classList.remove('hidden-input');
+                postalCodeInput.classList.add('active-input');
+                postalCodeInput.focus();
+            }
+
+            function hideEditMode(postalCode) {
+                const data = deliveryMap[postalCode];
+                if (!data && postalCode !== '') {
+                    alert('Zadané PSČ je neplatné.');
+                    return showEditMode();
+                }
+                
+                const displayData = data || deliveryMap.default;
+                locationText.textContent = displayData.display;
+                locationDisplay.style.display = 'flex';
+                postalCodeInput.classList.remove('active-input');
+                postalCodeInput.classList.add('hidden-input');
+                
+                updateDisplay(displayData);
+            }
+
+            editIcon.addEventListener('click', showEditMode);
+            
+            postalCodeInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    hideEditMode(postalCodeInput.value.trim());
+                }
+            });
+
+            postalCodeInput.addEventListener('blur', () => {
+                if (postalCodeInput.value.trim() !== '') {
+                    hideEditMode(postalCodeInput.value.trim());
+                } else {
+                    hideEditMode('04001');
+                }
+            });
+            
+            hideEditMode('04001');
+        });
+    </script>
+</body>
+</html>
